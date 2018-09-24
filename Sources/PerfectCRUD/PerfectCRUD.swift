@@ -407,22 +407,27 @@ public extension Date {
 		return ret
 	}
 	
-	init?(fromISO8601 string: String) {
-		let dateFormatter = DateFormatter()
-		dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-		dateFormatter.timeZone = TimeZone.current
-		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-		if let d = dateFormatter.date(from: string) {
-			self = d
-			return
-		}
-		dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSx"
-		if let d = dateFormatter.date(from: string) {
-			self = d
-			return
-		}
-		return nil
-	}
+    init?(fromISO8601 string: String) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone.current
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        if let d = dateFormatter.date(from: string) {
+            self = d
+            return
+        }
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSx"
+        if let d = dateFormatter.date(from: string) {
+            self = d
+            return
+        }
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        if let d = dateFormatter.date(from: string) {
+            self = d
+            return
+        }
+        return nil
+    }
 }
 
 #if swift(>=4.1)
