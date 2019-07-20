@@ -83,6 +83,7 @@ public protocol Selectable: TableProtocol {
 
 public protocol Whereable: TableProtocol {
 	func `where`(_ expr: CRUDBooleanExpression) -> Where<OverAllForm, Self>
+    func `where`(plain: String) -> Where<OverAllForm, Self>
 }
 
 public protocol Orderable: TableProtocol {
@@ -151,6 +152,10 @@ public extension Whereable {
 	func `where`(_ expr: CRUDBooleanExpression) -> Where<OverAllForm, Self> {
 		return .init(fromTable: self, expression: expr.crudExpression)
 	}
+    
+    func `where`(plain sql: String) -> Where<OverAllForm, Self> {
+        return .init(fromTable: self, expression: CRUDExpression.plain(sql))
+    }
 }
 
 public extension Orderable {

@@ -58,6 +58,8 @@ public indirect enum CRUDExpression {
 	case url(URL)
 	case null
 	
+    case plain(String)
+    
 	// todo:
 	// .blob with Data
 	// .integer of varying width
@@ -152,6 +154,8 @@ extension CRUDExpression {
 		case .like(let lhs, let wild1, let match, let wild2):
 			let rhs = "\(wild1 ? "%" : "")\(match.replacingOccurrences(of: "%", with: "\\%"))\(wild2 ? "%" : "")"
 			return try bin(state, "LIKE", lhs, .string(rhs))
+        case .plain(let plainSQL):
+            return plainSQL
 		}
 	}
 	private func bin(_ state: SQLGenState, _ op: String, _ lhs: CRUDExpression, _ rhs: CRUDExpression) throws -> String {
@@ -199,6 +203,8 @@ extension CRUDExpression {
 			return lhs.referencedTypes() + exprs.flatMap { $0.referencedTypes() }
 		case .like(let lhs, _, _, _):
 			return lhs.referencedTypes()
+        case .plain(_):
+            return []
 		}
 	}
 }
