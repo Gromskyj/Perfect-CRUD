@@ -57,9 +57,9 @@ public indirect enum CRUDExpression {
 	case date(Date)
 	case url(URL)
 	case null
-	
-    case plain(String)
     
+    case plain(String)
+	
 	// todo:
 	// .blob with Data
 	// .integer of varying width
@@ -205,6 +205,7 @@ extension CRUDExpression {
 			return lhs.referencedTypes()
         case .plain(_):
             return []
+
 		}
 	}
 }

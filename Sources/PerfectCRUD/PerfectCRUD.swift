@@ -40,6 +40,13 @@ public protocol SQLGenDelegate {
 	func quote(identifier: String) throws -> String
 	func getCreateTableSQL(forTable: TableStructure, policy: TableCreatePolicy) throws -> [String]
 	func getCreateIndexSQL(forTable name: String, on columns: [String], unique: Bool) throws -> [String]
+	func getEmptyInsertSnippet() -> String // usually DEFAULT VALUES vs. VALUES ()
+}
+
+public extension SQLGenDelegate {
+	func getEmptyInsertSnippet() -> String {
+		return "DEFAULT VALUES"
+	}
 }
 
 public protocol SQLExeDelegate {
@@ -84,6 +91,7 @@ public protocol Selectable: TableProtocol {
 public protocol Whereable: TableProtocol {
 	func `where`(_ expr: CRUDBooleanExpression) -> Where<OverAllForm, Self>
     func `where`(plain: String) -> Where<OverAllForm, Self>
+
 }
 
 public protocol Orderable: TableProtocol {
@@ -152,10 +160,10 @@ public extension Whereable {
 	func `where`(_ expr: CRUDBooleanExpression) -> Where<OverAllForm, Self> {
 		return .init(fromTable: self, expression: expr.crudExpression)
 	}
-    
     func `where`(plain sql: String) -> Where<OverAllForm, Self> {
         return .init(fromTable: self, expression: CRUDExpression.plain(sql))
     }
+
 }
 
 public extension Orderable {
@@ -231,7 +239,7 @@ extension CommandProtocol {
 	public func setSQL(state: inout SQLGenState) throws {}
 }
 
-extension SQLExeDelegate {
+public extension SQLExeDelegate {
 	func bind(_ bindings: Bindings) throws { return try bind(bindings, skip: 0) }
 }
 
@@ -312,26 +320,26 @@ struct SQLTopExeDelegate: SQLExeDelegate {
 }
 
 public struct SQLGenState {
-	enum Command {
+	public enum Command {
 		case select, insert, update, delete, unknown
 		case count
 	}
-	struct TableData {
-		let type: Codable.Type
-		let alias: String
-		let modelInstance: Codable?
-		let keyPathDecoder: CRUDKeyPathsDecoder
-		let joinData: PropertyJoinData?
+	public struct TableData {
+		public let type: Codable.Type
+		public let alias: String
+		public let modelInstance: Codable?
+		public let keyPathDecoder: CRUDKeyPathsDecoder
+		public let joinData: PropertyJoinData?
 	}
-	struct PropertyJoinData {
-		let to: AnyKeyPath
-		let on: AnyKeyPath
-		let equals: AnyKeyPath
-		let pivot: Codable.Type?
+	public struct PropertyJoinData {
+		public let to: AnyKeyPath
+		public let on: AnyKeyPath
+		public let equals: AnyKeyPath
+		public let pivot: Codable.Type?
 	}
-	struct Statement {
-		let sql: String
-		let bindings: Bindings
+	public struct Statement {
+		public let sql: String
+		public let bindings: Bindings
 	}
 	struct MyTableData {
 		let firstTable: TableData
@@ -341,16 +349,16 @@ public struct SQLGenState {
 	typealias Ordering = (key: AnyKeyPath, desc: Bool)
 	var delegate: SQLGenDelegate
 	var aliasCounter = 0
-	var tableData: [TableData] = []
+	public var tableData: [TableData] = []
 	var tablePopCount = 0
-	var command: Command = .unknown
+	public var command: Command = .unknown
 	var whereExpr: Expression?
-	var statements: [Statement] = [] // statements count must match tableData count for exe to succeed
+	public var statements: [Statement] = [] // statements count must match tableData count for exe to succeed
 	var accumulatedOrderings: [Ordering] = []
 	var currentLimit: (max: Int, skip: Int)?
-	var bindingsEncoder: CRUDBindingsEncoder?
-	var columnFilters: (include: [String], exclude: [String]) = ([], [])
-	init(delegate d: SQLGenDelegate) {
+	public var bindingsEncoder: CRUDBindingsEncoder?
+	public var columnFilters: (include: [String], exclude: [String]) = ([], [])
+	public init(delegate d: SQLGenDelegate) {
 		delegate = d
 	}
 	mutating func consumeState() -> ([Ordering], (max: Int, skip: Int)?) {
@@ -412,27 +420,24 @@ public extension Date {
 		return ret
 	}
 	
-    init?(fromISO8601 string: String) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.timeZone = TimeZone.current
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-        if let d = dateFormatter.date(from: string) {
-            self = d
-            return
-        }
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSx"
-        if let d = dateFormatter.date(from: string) {
-            self = d
-            return
-        }
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
-        if let d = dateFormatter.date(from: string) {
-            self = d
-            return
-        }
-        return nil
-    }
+	init?(fromISO8601 string: String) {
+		let dateFormatter = DateFormatter()
+		dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+		dateFormatter.timeZone = TimeZone.current
+		let validFormats = [
+			"yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+			"yyyy-MM-dd HH:mm:ss.SSSx",
+			"yyyy-MM-dd'T'HH:mm:ssZ",
+			"yyyy-MM-dd HH:mm:ssx"]
+		for fmt in validFormats {
+			dateFormatter.dateFormat = fmt
+			if let slf = dateFormatter.date(from: string) {
+				self = slf
+				return
+			}
+		}
+		return nil
+	}
 }
 
 #if swift(>=4.1)

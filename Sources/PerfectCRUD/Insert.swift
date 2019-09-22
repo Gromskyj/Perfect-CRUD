@@ -7,13 +7,6 @@
 
 import Foundation
 
-//public struct InsertPolicy: OptionSet {
-//	public let rawValue: Int
-//	public init(rawValue r: Int) { rawValue = r }
-//
-//	public static let defaultPolicy: InsertPolicy = []
-//}
-
 public struct Insert<OAF: Codable, A: TableProtocol>: FromTableProtocol, CommandProtocol {
 	public typealias FromTableType = A
 	public typealias OverAllForm = OAF
@@ -61,7 +54,12 @@ public struct Insert<OAF: Codable, A: TableProtocol>: FromTableProtocol, Command
 		let bindIdentifiers = bindings.map { $0.identifier }
 		
 		let nameQ = try delegate.quote(identifier: "\(OAF.CRUDTableName)")
-		let sqlStr = "INSERT INTO \(nameQ) (\(columnNames.joined(separator: ", "))) VALUES (\(bindIdentifiers.joined(separator: ", ")))"
+		let sqlStr: String
+		if columnNames.isEmpty {
+			sqlStr = "INSERT INTO \(nameQ) \(delegate.getEmptyInsertSnippet())"
+		} else {
+			sqlStr = "INSERT INTO \(nameQ) (\(columnNames.joined(separator: ", "))) VALUES (\(bindIdentifiers.joined(separator: ", ")))"
+		}
 		CRUDLogging.log(.query, sqlStr)
 		sqlGenState = state
 		let exeDelegate = try databaseConfiguration.sqlExeDelegate(forSQL: sqlStr)
@@ -89,19 +87,19 @@ public extension Table {
 		return try .init(fromTable: self, instances: [instance], includeKeys: [], excludeKeys: [])
 	}
 	@discardableResult
-	func insert(_ instances: [Form], setKeys: PartialKeyPath<OverAllForm>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
+	func insert<Z: Decodable>(_ instances: [Form], setKeys: KeyPath<OverAllForm, Z>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
 		return try .init(fromTable: self, instances: instances, includeKeys: [setKeys] + rest, excludeKeys: [])
 	}
 	@discardableResult
-	func insert(_ instance: Form, setKeys: PartialKeyPath<OverAllForm>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
+	func insert<Z: Decodable>(_ instance: Form, setKeys: KeyPath<OverAllForm, Z>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
 		return try .init(fromTable: self, instances: [instance], includeKeys: [setKeys] + rest, excludeKeys: [])
 	}
 	@discardableResult
-	func insert(_ instances: [Form], ignoreKeys: PartialKeyPath<OverAllForm>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
+	func insert<Z: Decodable>(_ instances: [Form], ignoreKeys: KeyPath<OverAllForm, Z>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
 		return try .init(fromTable: self, instances: instances, includeKeys: [], excludeKeys: [ignoreKeys] + rest)
 	}
 	@discardableResult
-	func insert(_ instance: Form, ignoreKeys: PartialKeyPath<OverAllForm>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
+	func insert<Z: Decodable>(_ instance: Form, ignoreKeys: KeyPath<OverAllForm, Z>, _ rest: PartialKeyPath<OverAllForm>...) throws -> Insert<Form, Table> {
 		return try .init(fromTable: self, instances: [instance], includeKeys: [], excludeKeys: [ignoreKeys] + rest)
 	}
 }
